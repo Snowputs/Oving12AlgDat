@@ -31,6 +31,11 @@ public class TreeBuilder {
                     writer.write(frequencies[i]+";");
                 }
             }
+
+            try (Writer writer = new BufferedWriter(new OutputStreamWriter(
+                    new FileOutputStream("src//FileLength.txt"), "utf-8"))) {
+                writer.write(new File("src//opg12.txt").length() + "");
+            }
         }catch (IOException e){
             System.out.println(e);
         }

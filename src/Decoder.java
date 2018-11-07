@@ -33,12 +33,17 @@ public class Decoder {
         try{
            // boolean flag = true;
             DataInputStream innfil = new DataInputStream(new BufferedInputStream(new FileInputStream("src//goal.txt")));
+            DataOutputStream utfil = new DataOutputStream(new BufferedOutputStream(new FileOutputStream("src//unencrypt.txt")));
+
+            BufferedReader br = new BufferedReader(new FileReader("src//FileLength.txt"));
+            String vx = br.readLine();
+            int fileLength = Integer.parseInt(vx);
             //HuffmanNode current = root;
             BitSet bs = BitSet.valueOf(getByte("src//goal.txt"));
             String bits = bitSetToString(bs);
             System.out.println(bits);
             int iterator = 0;
-            for(int i=0;i<1000;i++){
+            for(int i=0;i<fileLength;i++){
                 HuffmanNode curr = root;
                 while(!curr.isLeaf() && iterator<bits.length()){
                     if(bits.charAt(iterator) == '0'){
@@ -60,8 +65,11 @@ public class Decoder {
                         //st += current.c;
                     }*/
             }
-
+            br.close();
+            utfil.writeChars(st);
             System.out.println(st);
+            utfil.flush();
+            utfil.close();
         }catch (IOException e){
             System.out.println(e);
         }
