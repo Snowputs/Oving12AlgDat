@@ -1,31 +1,54 @@
 import java.io.*;
+import java.util.BitSet;
 import java.util.PriorityQueue;
 
 public class TreeBuilder {
-    final int SHOVE = 128;
+    private final int SHOVE = 128;
     int[] frequencies = new int[256];
-    byte[] data;
+    long[] data = new long[1000000];
+    String[] data2 = new String[1000000];
+    int fileLength = 0;
 
-    public void HuffTree(){
+    public  void buildTable(){
         try {
             DataInputStream innfil = new DataInputStream(new BufferedInputStream(new FileInputStream("src//opg12.txt")));
+
             byte x;
             while (true){
                 try {
                     x = innfil.readByte();
-                    char c = (char) x;
-                    frequencies[(int) x + SHOVE]++;
+                    //System.out.println(Integer.toBinaryString(UnsignByte.unsignedByte(x)) + " - " + (int) x);
+                    frequencies[UnsignByte.unsignedByte(x)]++;
+
+                    //System.out.print((char) x);
                 }catch (EOFException e){
                     break;
                 }
             }
+            try (Writer writer = new BufferedWriter(new OutputStreamWriter(
+                    new FileOutputStream("src//frequencytable.txt"), "utf-8"))) {
+                for(int i=0;i<frequencies.length;i++){
+                    writer.write(frequencies[i]+";");
+                }
+            }
+        }catch (IOException e){
+            System.out.println(e);
+        }
+        buildTree(frequencies);
+    }
 
-            PriorityQueue<HuffmanNode> hQueue = new PriorityQueue<>(frequencies.length, new MyComparator());
-            for (int i=0;i<frequencies.length;i++){
+    public HuffmanNode buildTree(int[] ft){
+            PriorityQueue<HuffmanNode> hQueue = new PriorityQueue<>(ft.length, new MyComparator());
+            for (int i=0;i<ft.length;i++){
+                if(ft[i] == 0) {continue;}
                 HuffmanNode node = new HuffmanNode();
-                int v = i-SHOVE;
+                int v = i;
                 node.c = (char) v;
-                node.freq = frequencies[i];
+                node.freq = ft[i];
+
+//                if(i == 216) {
+//                    System.out.println("");
+//                }
 
                 node.left = null;
                 node.right = null;
@@ -36,46 +59,47 @@ public class TreeBuilder {
             HuffmanNode root = null;
 
             while (hQueue.size()>1){
-                HuffmanNode one = hQueue.peek();
-                hQueue.poll();
+                HuffmanNode one = new HuffmanNode();
+                HuffmanNode two = new HuffmanNode();
 
-                HuffmanNode two = hQueue.peek();
-                hQueue.poll();
+                do {
+                    one = hQueue.poll();
+                }while(one.freq==0);
+                do {
+                    two = hQueue.poll();
+                }while(two.freq==0);
+                HuffmanNode newInnerNode = new HuffmanNode();
 
-                if(two == null){
-                    HuffmanNode newInnerNode = new HuffmanNode();
+                newInnerNode.freq = one.freq + two.freq;
 
-                    newInnerNode.freq = one.freq;
-                    newInnerNode.left = one;
+                newInnerNode.left = one;
+                newInnerNode.right = two;
 
-                    root = newInnerNode;
-
-                    hQueue.add(newInnerNode);
-                }else{
-                    HuffmanNode newInnerNode = new HuffmanNode();
-
-                    newInnerNode.freq = one.freq + two.freq;
-
-                    newInnerNode.left = one;
-                    newInnerNode.right = two;
-
-                    root = newInnerNode;
-
-                    hQueue.add(newInnerNode);
-                }
+                root = newInnerNode;
+                hQueue.add(newInnerNode);
             }
+            buildBook(root, 0b0);
             printCode(root, "");
-
-        } catch (IOException e){
-            System.out.println(e);
-        }
-
-
+        return root;
     }
 
+    public void buildBook(HuffmanNode root, long long1)
+    {
+        if (root.isLeaf()) {
+            data[root.c]=long1;
+            return;
+        }
+
+        long v = (long1<<1);
+        long j = (long1<<1);
+        v += 0b0;
+        j += 0b1;
+        buildBook(root.left, v);
+        buildBook(root.right, j);
+    }
 
     //FROM GEEKSFORGEEKS
-    public static void printCode(HuffmanNode root, String s)
+    public void printCode(HuffmanNode root, String s)
     {
 
         // base case; if the left and right are null
@@ -85,7 +109,7 @@ public class TreeBuilder {
 
             // c is the character in the node
             System.out.println(root.c + ":" + s);
-
+            data2[root.c] = s;
             return;
         }
 
@@ -98,10 +122,67 @@ public class TreeBuilder {
         printCode(root.right, s + "1");
     }
 
+    public void compress(String file){
+        try {
+            DataInputStream innfil = new DataInputStream(new BufferedInputStream(new FileInputStream("src//opg12.txt")));
+            DataOutputStream utfil = new DataOutputStream(new BufferedOutputStream(new FileOutputStream("src//goal.txt")));
+            String st = "";
+            while (true){
+                try {
+                    byte x = innfil.readByte();
+                    //System.out.println((char) x + ": " + data[(char)x]);
+                    int ex = UnsignByte.unsignedByte(x);
+                    //st += Long.toBinaryString(data[ex]);
+                    st += data2[ex];
+                    //System.out.println(Long.toBinaryString(4));
+                }catch (EOFException e){
+                    break;
+                }
+            }
+            innfil.close();
+            System.out.println(st);
+
+            BitSet temp = new BitSet();
+            int up = 0;
+            for(int j = 0; j < st.length(); j++){
+                if(st.charAt(j)=='1'){
+                    temp.set(j);
+                }
+            }
+
+
+
+            byte[] heisann = temp.toByteArray();
+            //System.out.println(tokens);
+            utfil.write(heisann);
+            /*
+            while(up*8<st.length()) {
+                String tokens = "";
+                for (int i = 0; i < 8; i++) {
+                    if((i+(up*8))>=st.length()){
+                        break;
+                    }
+                    tokens += st.charAt(i+(up*8));
+                }
+
+
+                //utfil.writeByte((byte)Integer.parseInt(tokens,2));
+
+                up++;
+            }*/
+            utfil.flush();
+            utfil.close();
+        }catch (IOException e){
+            System.out.println("File machine broke on out");
+        }
+
+    }
+
     public static void main(String[] args) {
         TreeBuilder tb = new TreeBuilder();
-        tb.HuffTree();
-        System.out.println((char) -61);
+        tb.buildTable();
+
+        tb.compress("bla");
     }
 
 }
