@@ -3,16 +3,18 @@ import java.util.Arrays;
 import java.util.BitSet;
 
 public class Decoder {
-    static final int SHOVE = 128;
     int[] frequencies = new int[256];
     TreeBuilder tb = new TreeBuilder();
     HuffmanNode root = new HuffmanNode();
+    int fileLength = 0;
 
-    void fillFrequencies() {
+    void fillFrequencies(String path) {
         try {
-            BufferedReader br = new BufferedReader(new FileReader("src//frequencytable.txt"));
+            BufferedReader br = new BufferedReader(new FileReader(path));
             String st = br.readLine();
-            String[] stt = st.split(";");
+            String[] firstSplit = st.split("&");
+            String[] stt = firstSplit[1].split(";");
+            fileLength = Integer.parseInt(firstSplit[0]);
             for(int i=0;i<frequencies.length;i++){
                 frequencies[i] = Integer.parseInt(stt[i]);
                 //System.out.println(frequencies[i]);
@@ -26,19 +28,14 @@ public class Decoder {
         root = tb.buildTree(frequencies);
     }
 
-    void decodeFile(){
-        fillFrequencies();
+    void decodeFile(String innfile, String outfile, String key){
+        fillFrequencies(key);
         buildTree();
         String st = "";
         try{
-           // boolean flag = true;
-            DataInputStream innfil = new DataInputStream(new BufferedInputStream(new FileInputStream("src//goal.txt")));
-            DataOutputStream utfil = new DataOutputStream(new BufferedOutputStream(new FileOutputStream("src//unencrypt.txt")));
+            DataInputStream innfil = new DataInputStream(new BufferedInputStream(new FileInputStream(innfile)));
+            DataOutputStream utfil = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(outfile)));
 
-            BufferedReader br = new BufferedReader(new FileReader("src//FileLength.txt"));
-            String vx = br.readLine();
-            int fileLength = Integer.parseInt(vx);
-            //HuffmanNode current = root;
             BitSet bs = BitSet.valueOf(getByte("src//goal.txt"));
             String bits = bitSetToString(bs);
             System.out.println(bits);
@@ -54,24 +51,14 @@ public class Decoder {
                         iterator++;
                     }
                 }
-                st += curr.c;/*
-                    if(!current.isLeaf() && bits.charAt(i)=='0'){
-                        current = current.left;
-                        System.out.println("0");
-                    }else if(!current.isLeaf() && bits.charAt(i)=='1'){
-                        current = current.right;
-                        System.out.println("1");
-                    }else{
-                        //st += current.c;
-                    }*/
+                st += curr.c;
             }
-            br.close();
-            utfil.writeChars(st);
+            utfil.writeBytes(st);
             System.out.println(st);
             utfil.flush();
             utfil.close();
         }catch (IOException e){
-            System.out.println(e);
+            e.printStackTrace();
         }
     }
 
@@ -106,7 +93,7 @@ public class Decoder {
 
     public static void main(String[] args) {
         Decoder dc = new Decoder();
-        dc.decodeFile();
+        dc.decodeFile("src//goal.txt","src//unencrypt.txt","src//frequencytable.txt");
     }
 }
 
